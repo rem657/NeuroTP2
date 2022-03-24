@@ -162,10 +162,9 @@ def display_surfaces_WC(
 ):
 	dataf = _make_surfaces_WC(weights, I_min, I_max, n_step_I, t_min, t_max, step_size_t, alpha, gamma, beta)
 	figure = go.Figure()
-	colorscale_E = [[i/int(len(dataf)/2), f'rgb{tuple(map(lambda c: int(255*c), color))}'] for i, color in enumerate(sns.color_palette('OrRd', int(len(dataf)/2)))]
-	colorscale_I = [[i/int(len(dataf)/2), f'rgb{tuple(map(lambda c: int(255*c), color))}'] for i, color in enumerate(sns.color_palette('GnBu', int(len(dataf)/2)))]
+	colorscale_E = [[i/(int(len(dataf)/2) - 1), f'rgb{tuple(map(lambda c: int(255*c), color_E))}'] for i, color_E in enumerate(sns.color_palette('OrRd', int(len(dataf)/2)))]
+	colorscale_I = [[j/(int(len(dataf)/2) - 1), f'rgb{tuple(map(lambda c: int(255*c), color_I))}'] for j, color_I in enumerate(sns.color_palette('GnBu', int(len(dataf)/2)))]
 	count_E, count_I = 0, 0
-
 	for df in dataf:
 		temp_data = dataf[df]
 		t = temp_data.columns
@@ -173,16 +172,18 @@ def display_surfaces_WC(
 		prop = temp_data.values
 		colors = np.ones(prop.shape)
 		is_excit = df.endswith('E')
-		print(df)
-		print(is_excit)
 		if is_excit:
-			colors = colors * (count_E / int(len(dataf)/2))
+			colors = colors * (count_E / (int(len(dataf)/2) - 1))
 			count_E += 1
 			colorscale = colorscale_E
+			# print(colorscale)
 		else:
-			colors = colors * (count_I / int(len(dataf)/2))
+			colors = colors * (count_I / (int(len(dataf)/2) - 1))
 			count_I += 1
 			colorscale = colorscale_I
+		print(colorscale)
+		print(colors.shape)
+		print(np.max(colors))
 		figure.add_trace(
 			go.Surface(
 				x=t,
@@ -190,7 +191,7 @@ def display_surfaces_WC(
 				z=prop,
 				showscale=False,
 				name=df[-3:],
-				opacity=0.5,
+				opacity=0.8,
 				colorscale=colorscale,
 				surfacecolor=colors,
 				showlegend=True,
