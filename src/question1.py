@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.integrate import solve_ivp
 import plotly.graph_objects as go
 from typing import Callable
+import seaborn as sns
 
 
 class WilsonCowanModel:
@@ -100,18 +101,17 @@ def display_model(
 	return fig
 
 
-def display_model_I(
+def _make_surfaces_WC(
 		weights: np.ndarray,
 		I_min: float,
 		I_max: float,
 		n_step_I: int,
 		t_min: float = 0.0,
 		t_max: float = 50.0,
-		n_step_t: int = 0.5,
+		step_size_t: float = 0.5,
 		alpha: float = 1,
 		gamma: float = 0.2,
 		beta: float = 0.2,
-		save: bool = False
 ):
 	model = WilsonCowanModel(t_min, t_max, gamma, alpha, beta, weights)
 	A = [0.0, 0.0]
@@ -119,13 +119,13 @@ def display_model_I(
 	R = [0.0, 0.0]
 	init_cond = np.array([*A, *S, *R])
 	currents = np.linspace(I_min, I_max, n_step_I)
-	time = np.linspace(t_min, t_max, n_step_t)
-	data_A_E = pd.DataFrame(np.zeros((n_step_I, n_step_t)), columns=time, index=currents)
-	data_A_I = pd.DataFrame(np.zeros((n_step_I, n_step_t)), columns=time, index=currents)
-	data_S_E = pd.DataFrame(np.zeros((n_step_I, n_step_t)), columns=time, index=currents)
-	data_S_I = pd.DataFrame(np.zeros((n_step_I, n_step_t)), columns=time, index=currents)
-	data_R_E = pd.DataFrame(np.zeros((n_step_I, n_step_t)), columns=time, index=currents)
-	data_R_I = pd.DataFrame(np.zeros((n_step_I, n_step_t)), columns=time, index=currents)
+	time = np.arange(t_min, t_max, step_size_t)
+	data_A_E = pd.DataFrame(np.zeros((n_step_I, time.shape[0])), columns=time, index=currents)
+	data_A_I = pd.DataFrame(np.zeros((n_step_I, time.shape[0])), columns=time, index=currents)
+	data_S_E = pd.DataFrame(np.zeros((n_step_I, time.shape[0])), columns=time, index=currents)
+	data_S_I = pd.DataFrame(np.zeros((n_step_I, time.shape[0])), columns=time, index=currents)
+	data_R_E = pd.DataFrame(np.zeros((n_step_I, time.shape[0])), columns=time, index=currents)
+	data_R_I = pd.DataFrame(np.zeros((n_step_I, time.shape[0])), columns=time, index=currents)
 	for current in currents:
 		current_func = lambda t: np.array([current, 0])
 		solution = model.compute_model(init_cond, current_func, t_eval=time)
@@ -144,20 +144,82 @@ def display_model_I(
 		data_R_E=data_R_E,
 		data_R_I=data_R_I,
 	)
+	return dataf
+
+
+def display_surfaces_WC(
+		weights: np.ndarray,
+		I_min: float,
+		I_max: float,
+		n_step_I: int,
+		t_min: float = 0.0,
+		t_max: float = 50.0,
+		step_size_t: float = 0.5,
+		alpha: float = 1,
+		gamma: float = 0.2,
+		beta: float = 0.2,
+		save: bool = False
+):
+	dataf = _make_surfaces_WC(weights, I_min, I_max, n_step_I, t_min, t_max, step_size_t, alpha, gamma, beta)
 	figure = go.Figure()
+	colorscale_E = [[i/int(len(dataf)/2), f'rgb{tuple(map(lambda c: int(255*c), color))}'] for i, color in enumerate(sns.color_palette('OrRd', int(len(dataf)/2)))]
+	colorscale_I = [[i/int(len(dataf)/2), f'rgb{tuple(map(lambda c: int(255*c), color))}'] for i, color in enumerate(sns.color_palette('GnBu', int(len(dataf)/2)))]
+	count_E, count_I = 0, 0
+
 	for df in dataf:
 		temp_data = dataf[df]
 		t = temp_data.columns
 		I = temp_data.index
 		prop = temp_data.values
+		colors = np.ones(prop.shape)
+		is_excit = df.endswith('E')
+		print(df)
+		print(is_excit)
+		if is_excit:
+			colors = colors * (count_E / int(len(dataf)/2))
+			count_E += 1
+			colorscale = colorscale_E
+		else:
+			colors = colors * (count_I / int(len(dataf)/2))
+			count_I += 1
+			colorscale = colorscale_I
 		figure.add_trace(
-			go.Surface(x=t, y=I, z=prop)
+			go.Surface(
+				x=t,
+				y=I,
+				z=prop,
+				showscale=False,
+				name=df[-3:],
+				opacity=0.5,
+				colorscale=colorscale,
+				surfacecolor=colors,
+				showlegend=True,
+				cmin=0,
+				cmax=1
+			)
 		)
-		#todo colormap
+	figure.update_layout(
+		scene=dict(
+			xaxis=dict(
+				title='Time [ms]',
+				range=[t_min, t_max]
+			),
+			yaxis=dict(
+				title='I_E [-]',
+				range=[I_min, I_max]
+			),
+			zaxis=dict(
+				title='Proportion [-]',
+				range=[0, 1]
+			)
+		)
+	)
 	if save:
 		figure.write_html('figure1a.html')
 	else:
 		figure.show()
+
+
 
 
 if __name__ == '__main__':
@@ -172,4 +234,4 @@ if __name__ == '__main__':
 	beta = 0.2
 	I_func = lambda t: np.array([10, 0])
 	# display_model(0, 100, weights, I_func, alpha, gamma, beta).show()
-	display_model_I(weights, -15, 15, 200)
+	display_surfaces_WC(weights, -15, 15, 200, step_size_t=0.2)
