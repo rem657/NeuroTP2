@@ -59,7 +59,7 @@ plot_layout_3D = dict(
 E_colorscale_name = 'gist_heat'  # 'inferno'#'rocket'#'OrRd'
 I_colorscale_name = 'ocean'  # 'mako'#'winter_r'#'PuBuGn_r'
 
-contours3D=dict(
+contours3D = dict(
 	x=dict(
 		show=False,
 		highlight=False
@@ -75,6 +75,7 @@ contours3D=dict(
 		highlight=False
 	)
 )
+
 
 class WilsonCowanModel:
 	def __init__(
@@ -431,6 +432,191 @@ def display_surface_wee_time(
 		figure.write_html('figure1a.html')
 	else:
 		figure.show()
+
+
+def _make_surfaces(
+		I_e,
+		I_i,
+		W_ee,
+		W_ei,
+		W_ie,
+		W_ii,
+		t_min,
+		t_max,
+		step_size_t,
+		gamma,
+		alpha,
+		beta
+):
+	A = [0.0, 0.0]
+	S = [1.0, 1.0]
+	R = [0.0, 0.0]
+	init_cond = np.array([*A, *S, *R])
+	time = np.arange(t_min, t_max, step_size_t)
+	if type(I_e) is np.ndarray:
+		arr_param = np.copy(I_e)
+		param_name = 'I_e'
+	elif type(I_i) is np.ndarray:
+		arr_param = np.copy(I_i)
+		param_name = 'I_i'
+	elif type(W_ee) is np.ndarray:
+		arr_param = np.copy(W_ee)
+		param_name = 'W_ee'
+	elif type(W_ei) is np.ndarray:
+		arr_param = np.copy(W_ei)
+		param_name = 'W_ei'
+	elif type(W_ie) is np.ndarray:
+		arr_param = np.copy(W_ie)
+		param_name = 'W_ie'
+	else:
+		arr_param = np.copy(W_ii)
+		param_name = 'W_ii'
+	tuple_shape = (arr_param.shape[0], time.shape[0])
+	data_A_E = pd.DataFrame(np.zeros(tuple_shape), columns=time, index=arr_param)
+	data_A_I = pd.DataFrame(np.zeros(tuple_shape), columns=time, index=arr_param)
+	data_S_E = pd.DataFrame(np.zeros(tuple_shape), columns=time, index=arr_param)
+	data_S_I = pd.DataFrame(np.zeros(tuple_shape), columns=time, index=arr_param)
+	data_R_E = pd.DataFrame(np.zeros(tuple_shape), columns=time, index=arr_param)
+	data_R_I = pd.DataFrame(np.zeros(tuple_shape), columns=time, index=arr_param)
+	for param in arr_param:
+		if param_name == 'I_e':
+			I_e = param
+		elif param_name == 'I_i':
+			I_i = param
+		elif param_name == 'W_ee':
+			W_ee = param
+		elif param_name == 'W_ei':
+			W_ei = param
+		elif param_name == 'W_ie':
+			W_ie = param
+		elif param_name == 'W_ii':
+			W_ii = param
+		current_func = lambda t: np.array([I_e, I_i])
+		weight_matrix = np.array(
+			[
+				[W_ee, W_ei],
+				[W_ie, W_ii]
+			]
+		)
+		model = WilsonCowanModel(t_min, t_max, gamma, alpha, beta, weight_matrix)
+		solution = model.compute_model(init_cond, current_func, t_eval=time)
+		y = solution.y
+		data_A_E.loc[param, :] = y[0, :]
+		data_A_I.loc[param, :] = y[1, :]
+		data_S_E.loc[param, :] = y[2, :]
+		data_S_I.loc[param, :] = y[3, :]
+		data_R_E.loc[param, :] = y[4, :]
+		data_R_I.loc[param, :] = y[5, :]
+	dataf = dict(
+		data_A_E=data_A_E,
+		data_A_I=data_A_I,
+		data_S_E=data_S_E,
+		data_S_I=data_S_I,
+		data_R_E=data_R_E,
+		data_R_I=data_R_I,
+	)
+	return dataf
+
+
+def display_surface(
+		I_e,
+		I_i,
+		W_ee,
+		W_ei,
+		W_ie,
+		W_ii,
+		t_min,
+		t_max,
+		step_size_t,
+		gamma,
+		alpha,
+		beta
+) -> go.Figure:
+	figure = go.Figure()
+	dataf = _make_surfaces(
+		I_e,
+		I_i,
+		W_ee,
+		W_ei,
+		W_ie,
+		W_ii,
+		t_min,
+		t_max,
+		step_size_t,
+		gamma,
+		alpha,
+		beta
+	)
+	axis_name = ''
+	if type(I_e) is np.ndarray:
+		axis_name = 'I<sub>e</sub> [-]'
+	elif type(I_i) is np.ndarray:
+		axis_name = 'I<sub>i</sub> [-]'
+	elif type(W_ee) is np.ndarray:
+		axis_name = 'W<sub>EE</sub> [-]'
+	elif type(W_ei) is np.ndarray:
+		axis_name = 'W<sub>EI</sub> [-]'
+	elif type(W_ie) is np.ndarray:
+		axis_name = 'W<sub>IE</sub> [-]'
+	elif type(W_ii) is np.ndarray:
+		axis_name = 'W<sub>II</sub> [-]'
+	colorscale_E = [[i / (int(len(dataf) / 2) - 1), f'rgb{tuple(map(lambda c: int(255 * c), color_E))}'] for i, color_E
+	                in enumerate(sns.color_palette(E_colorscale_name, int(len(dataf) / 2)))]
+	colorscale_I = [[j / (int(len(dataf) / 2) - 1), f'rgb{tuple(map(lambda c: int(255 * c), color_I))}'] for j, color_I
+	                in enumerate(sns.color_palette(I_colorscale_name, int(len(dataf) / 2)))]
+	count_E, count_I = 0, 0
+	for df in dataf:
+		temp_data = dataf[df]
+		t = temp_data.columns
+		var = temp_data.index
+		prop = temp_data.values
+		colors = np.ones(prop.shape)
+		is_excit = df.endswith('E')
+		if is_excit:
+			colors = colors * (count_E / (int(len(dataf) / 2) - 1))
+			count_E += 1
+			colorscale = colorscale_E
+		# print(colorscale)
+		else:
+			colors = colors * (count_I / (int(len(dataf) / 2) - 1))
+			count_I += 1
+			colorscale = colorscale_I
+		figure.add_trace(
+			go.Surface(
+				x=t,
+				y=var,
+				z=prop,
+				showscale=False,
+				name=df[-3:],
+				opacity=0.7,
+				colorscale=colorscale,
+				surfacecolor=colors,
+				showlegend=True,
+				contours=contours3D,
+				cmin=0,
+				cmax=1
+			)
+		)
+	figure.update_layout(
+		scene=dict(
+			xaxis=dict(
+				title='Time [ms]',
+				range=[t_min, t_max],
+				**axes_3D
+			),
+			yaxis=dict(
+				title=axis_name,
+				**axes_3D
+			),
+			zaxis=dict(
+				title='Proportion [-]',
+				range=[0, 1],
+				**axes_3D
+			)
+		)
+	)
+	figure.update_layout(plot_layout_3D)
+	return figure
 
 
 if __name__ == '__main__':

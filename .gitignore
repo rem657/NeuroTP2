@@ -91,3 +91,4 @@ fabric.properties
 !.idea/runConfigurations
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm+all
+src/__pycache__/question1.cpython-39.pyc
