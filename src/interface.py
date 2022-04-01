@@ -1,7 +1,7 @@
 import numpy as np
 
 from question1 import WilsonCowanModel, display_surface_wee_time, display_surfaces_WC, go, display_surface
-from dash import Dash, html, dcc, Input, Output, State
+from dash import Dash, html, dcc, Input, Output, State, no_update
 import dash_bootstrap_components as dbc
 
 # APP
@@ -150,6 +150,23 @@ def make_sidebar():
 		className="d-grid gap-2 col-10 mx-auto",
 		style={'margin-top': '5rem'}
 	)
+	save_button = html.Div(
+		[
+			dbc.Button("Save Figure", color="warning", id='save-button'),
+			dbc.Toast(
+				[html.P("Figure saved !", className="mb-0")],
+				id="save-toast",
+				color='dark',
+				header="You did it!!!",
+				dismissable=True,
+				is_open=False,
+				duration=2000,
+				body_style={'color': "white"}
+			),
+		],
+		className="d-grid gap-2 col-10 mx-auto",
+		style={'margin-top': '5rem'}
+	)
 	return html.Div(
 		[
 			html.H2("Menu", className="display-4"),
@@ -158,7 +175,8 @@ def make_sidebar():
 			dbc.Row(y_axis_selector),
 			dbc.Row(weight_selection),
 			dbc.Row(current_selector),
-			dbc.Row(integrate_button)
+			dbc.Row(integrate_button),
+			dbc.Row(save_button)
 		],
 		style=SIDEBAR_STYLE,
 	)
@@ -249,7 +267,43 @@ def update_graph(n_clicks: int, axis_val, min_axis, max_axis, step_size, I_E, I_
 		)
 		return figure
 	else:
-		return go.Figure()
+		return no_update
+
+
+@app.callback(
+	Output("save-toast", "is_open"),
+	Input('save-button', 'n_clicks'),
+	State('graph', 'figure'),
+	State('axis-dropdown', 'value'),
+	State('ymin', 'value'),
+	State('ymax', 'value'),
+	State('I_E', 'value'),
+	State('I_I', 'value'),
+	State('wee', 'value'),
+	State('wei', 'value'),
+	State('wie', 'value'),
+	State('wii', 'value')
+)
+def save_figure(n_clicks, figure, axis_val, ymin, ymax, I_E, I_I, W_EE, W_EI, W_IE, W_II):
+	if n_clicks is not None:
+		figure_title = f'surface_{axis_val}_{ymin=}_{ymax=}_'
+		if axis_val != 'I_E':
+			figure_title += f'{I_E=}_'
+		if axis_val != 'I_I':
+			figure_title += f'{I_I=}_'
+		if axis_val != 'W_EE':
+			figure_title += f'{W_EE=}_'
+		if axis_val != 'W_EI':
+			figure_title += f'{W_EI=}_'
+		if axis_val != 'W_IE':
+			figure_title += f'{W_IE=}_'
+		if axis_val != 'W_II':
+			figure_title += f'{W_II=}_'
+		figure_title += '.html'
+		go.Figure(**figure).write_html(figure_title)
+		return True
+	else:
+		return no_update
 
 
 if __name__ == '__main__':

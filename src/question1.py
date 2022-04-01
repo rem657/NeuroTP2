@@ -126,6 +126,33 @@ class WilsonCowanModel:
 	def compute_model(self, init_cond: np.ndarray, I: callable, **kwargs):
 		return solve_ivp(self.dXdt, self.time, init_cond, method='LSODA', args=[I], **kwargs)
 
+	def nullcline_A_E(self, A_e, I_e):
+		gamma_alpha = self.gamma/self.alpha
+		Ae_Se = (1/A_e) - 1 - (self.alpha / self.beta)
+		a = gamma_alpha * Ae_Se
+		a[a==0] = None
+		ln = a - 1
+		Wei = self.weights[0, 1]
+		Wee = self.weights[0, 0]
+		return (1 / Wei) * (np.log(ln) + I_e + A_e*Wee)
+
+	def nullcline_A_I(self, A_i, I_i):
+		gamma_alpha = self.gamma/self.alpha
+		Ai_Si = (1/A_i) - 1 - (self.alpha / self.beta)
+		a = gamma_alpha * Ai_Si
+		a[a==0] = None
+		ln = a - 1
+		Wie = self.weights[1, 0]
+		Wii = self.weights[1, 1]
+		return (1 / Wie) * (A_i*Wii - np.log(ln) - I_i)
+		# gammaSe = self.gamma * (1 - A_e - (self.alpha / self.beta) * A_e)
+		# alphaAe = self.alpha * A_e
+		# alphaAe[alphaAe == 0] = None
+		# a1 = gammaSe / alphaAe
+		# ln = a1 - 1  # - np.exp(-I_e) - np.exp(-A_e*self.weights[0, 0])
+		# a2 = I_e + A_e * self.weights[0, 0]
+		# return   # (self.gamma/self.alpha) * self.F(self.INP(1-S+R, I)) * S
+
 
 def display_model(
 		t_init: float,
@@ -619,17 +646,128 @@ def display_surface(
 	return figure
 
 
+def _phase_plan(model: WilsonCowanModel, time: np.ndarray, current_fun: Callable, initial_cond: np.ndarray):
+	solution = model.compute_model(initial_cond, current_fun, t_eval=time)
+	y = solution.y
+	A_E = y[0, :]
+	A_I = y[1, :]
+	return time, A_E, A_I
+
+
+def phase_plan_layout(fig: go.Figure):
+	fig.update_xaxes(
+		title='A<sub>E</sub>'
+	)
+	fig.update_yaxes(
+		title='A<sub>I</sub>'
+	)
+	fig.update_layout(plot_layout)
+	return fig
+
+
+def phase_plan_var_init(weights: np.ndarray, current_func: Callable):
+	# weights = np.array(
+	# 	[
+	# 		[100, 1000],
+	# 		[100, 0]
+	# 	]
+	# )
+	A_0 = [0.0, 0.0]
+	S_0 = [1.0, 1.0]
+	R_0 = [0.0, 0.0]
+	init_cond_0 = np.array([*A_0, *S_0, *R_0])
+	A_1 = [1.0, 1.0]
+	S_1 = [0.0, 0.0]
+	R_1 = [0.0, 0.0]
+	init_cond_1 = np.array([*A_1, *S_1, *R_1])
+	A_right = [0.7, 0.01]
+	S_right = [1 - A_right[0], 1 - A_right[1]]
+	R_right = [0.0, 0.0]
+	init_cond_right = np.array([*A_right, *S_right, *R_right])
+	A_right_2 = [0.7, 0.2]
+	S_right_2 = [1 - A_right_2[0], 1 - A_right_2[0]]
+	R_right_2 = [0.0, 0.0]
+	init_cond_right_2 = np.array([*A_right_2, *S_right_2, *R_right_2])
+	A_right_3 = [0.9, 0.3]
+	S_right_3 = [1 - A_right_3[0], 1 - A_right_3[0]]
+	R_right_3 = [0.0, 0.0]
+	init_cond_right_3 = np.array([*A_right_3, *S_right_3, *R_right_3])
+	A_right_3 = [0.9, 0.3]
+	S_right_3 = [1 - A_right_3[0], 1 - A_right_3[0]]
+	R_right_3 = [0.0, 0.0]
+	init_cond_right_3 = np.array([*A_right_3, *S_right_3, *R_right_3])
+	A_center = [0.07, 0.01]
+	S_center = [1 - A_center[0], 1 - A_center[1]]
+	R_center = [0.0, 0.0]
+	init_cond_center = np.array([*A_center, *S_center, *R_center])
+	A_asym = [0.1, 1]
+	S_asym = [1 - A_asym[0], 1 - A_asym[1]]
+	R_asym = [0.0, 0.0]
+	init_cond_asym = np.array([*A_asym, *S_asym, *R_asym])
+	A_asym_1 = [0.4, 0.8]
+	S_asym_1 = [1 - A_asym_1[0], 1 - A_asym_1[1]]
+	R_asym_1 = [0.0, 0.0]
+	init_cond_asym_1 = np.array([*A_asym_1, *S_asym_1, *R_asym_1])
+
+	x, y = np.mgrid[0:1:5j, 0:1:5j]
+	x, y = x.flatten(), y.flatten()
+	arr_init_conds = [np.array([x[i], y[i], 1 - x[i], 1 - y[i], 0.0, 0.0]) for i in range(x.shape[0])] + []
+	# arr_init_conds = [init_cond_0, init_cond_1, init_cond_right, init_cond_center, init_cond_asym, init_cond_asym_1, init_cond_right_2, init_cond_right_3]
+	figure = go.Figure()
+	tmin = 0
+	tmax = 200
+	time = np.linspace(tmin, tmax, 8000)
+	model = WilsonCowanModel(tmin, tmax, weights=weights)
+	for condition in arr_init_conds:
+		time, A_E, A_I = _phase_plan(model, time, current_func, condition)
+		figure.add_trace(
+			go.Scatter(
+				x=A_E,
+				y=A_I,
+				mode='lines',
+				name=f'({condition[0]}, {condition[1]})'
+			)
+		)
+	arr_nulcline_ae = np.linspace(0, 0.2, 500)
+	arr_nulcline_ai = np.linspace(0, 0.1, 500)
+	nulcline_ae = model.nullcline_A_E(arr_nulcline_ae, current_func(0)[0])
+	nulcline_ai = model.nullcline_A_I(arr_nulcline_ai, current_func(0)[1])
+	figure.add_trace(
+		go.Scatter(
+			x=arr_nulcline_ae[~np.isnan(nulcline_ae)],
+			y=nulcline_ae[~np.isnan(nulcline_ae)],
+			mode='lines',
+			name='nullcline A<sub>E</sub>',
+			line_width=3,
+			line_color='orange'
+		)
+	)
+	figure.add_trace(
+		go.Scatter(
+			x=nulcline_ai[~np.isnan(nulcline_ai)],
+			y=arr_nulcline_ai[~np.isnan(nulcline_ai)],
+			mode='lines',
+			name='nullcline A<sub>I</sub>',
+			line_width=3,
+			line_color='crimson'
+		)
+	)
+	figure = phase_plan_layout(figure)
+	figure.show()
+
+
 if __name__ == '__main__':
 	weights = np.array(
 		[
-			[0, 0],
-			[0, 0]
+			[100, 1000],
+			[100, 0]
 		]
 	)
 	alpha = 1.0
 	gamma = 0.2
 	beta = 0.2
-	# I_func = lambda t: np.array([10, 0])
+	I_func = lambda t: np.array([5, -10])
 	# display_model(0, 100, weights, I_func, alpha, gamma, beta).show()
 	# display_surfaces_WC(weights, -15, 15, 200, step_size_t=0.2)  # question 1a
-	display_surface_wee_time(0.0, 0.0, 55, 2, 0.0, 100.0, 0.2, )
+	# display_surface_wee_time(0.0, 0.0, 55, 2, 0.0, 100.0, 0.2, )
+	phase_plan_var_init(weights, I_func)
