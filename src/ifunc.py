@@ -50,6 +50,16 @@ class ISin(IFunc):
 		return self.amplitude*np.sin(2*np.pi*t_ms / self.period)
 
 
+class ISinSquare(IFunc):
+	def __init__(self, period: float, amplitude: float = 1.0):
+		super(ISinSquare, self).__init__(f"ISinSquare_p{str(period).replace('.', '_')}_a{str(amplitude).replace('.', '_')}")
+		self.period = period
+		self.amplitude = amplitude
+
+	def __call__(self, t_ms: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+		return self.amplitude*np.sin(2*np.pi*t_ms / self.period)**2
+
+
 
 
 
