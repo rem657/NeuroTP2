@@ -252,7 +252,7 @@ def question_2a_worker(lif, p_EE, I_E_value):
 	return LIF.get_firing_rate(lif_output, reduce=True)
 
 
-def question_2a():
+def question_2a(show=False):
 	from pythonbasictools.multiprocessing import apply_func_multiprocess
 
 	sns.set_theme()
@@ -282,11 +282,12 @@ def question_2a():
 	ax.set_ylabel("I_E")
 	os.makedirs("figures", exist_ok=True)
 	plt.savefig("figures/q2a_heatmap.png", dpi=300)
-	plt.show()
+	if show:
+		plt.show()
 
 
 if __name__ == '__main__':
-	# question_2_exploration(show=True)
+	question_2_exploration(show=True)
 	question_2a()
 
 
