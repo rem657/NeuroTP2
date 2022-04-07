@@ -5,6 +5,7 @@ from typing import NamedTuple, Callable, Union
 import matplotlib.pyplot as plt
 import seaborn as sns
 import tqdm
+from scipy.stats import zscore
 
 from src.ifunc import IConst, IFunc, ISin, ISinSquare
 
@@ -37,9 +38,9 @@ class LIF:
 			p_II: float = 0.1,
 			v_thresh: float = -55.0,
 			v_reset: float = -75.0,
-			g_L: float = 1.0,
+			g_L: float = 0.1,
 			E_L: float = -75.0,
-			tau_syn: float = 10.0,
+			tau_syn: float = 0.1,
 	):
 		self.n_exc = n_exc
 		self.n_inh = n_inh
@@ -185,18 +186,18 @@ class LIF:
 		plt.show()
 
 
-def question_2_exploration():
+def question_2_exploration(show=False):
 	from src.ifunc import IConst
 
 	np.random.seed(42)
-	lif = LIF(n_exc=50, n_inh=50, p_EE=0.8, p_EI=0.5, p_IE=0.5, p_II=0.5)
+	lif = LIF(n_exc=50, n_inh=50, p_EE=0.05, p_EI=0.0, p_IE=0.0, p_II=0.0)
 	lif.show_c()
-	lif_output = lif.run(IConst(25.0), IConst(0.0), T_ms=400, dt=0.01)
+	lif_output = lif.run(IConst(5.0), IConst(0.0), T_ms=100, dt=0.025)
 
 	n_neurone = 3
 	fr_mean = LIF.get_firing_rate(lif_output, reduce=True)
 	neuron_indexes = np.argsort(np.abs(fr_mean - LIF.get_firing_rate(lif_output, reduce=False)))[:n_neurone]
-	neuron_indexes = np.argsort(LIF.get_firing_rate(lif_output, reduce=False))[-n_neurone:]
+	# neuron_indexes = np.argsort(LIF.get_firing_rate(lif_output, reduce=False))[-n_neurone:]
 	# neuron_indexes = [0, ]
 	fig, axes = plt.subplots(4, len(neuron_indexes), figsize=(8, 5), sharex='all', sharey='row')
 	if isinstance(axes, plt.Axes):
@@ -216,12 +217,38 @@ def question_2_exploration():
 	axes[3][0].set_ylabel("I [?]")
 	axes[-1][int(len(neuron_indexes) / 2)].set_xlabel("Time [ms]")
 	plt.tight_layout(pad=2.0)
-	plt.show()
+	os.makedirs("figures", exist_ok=True)
+	fig.savefig("figures/q2a_explo_traces.png", dpi=300)
+	if show:
+		plt.show()
+	
+	neuron_indexes = lif.exc_indexes
+	fig, ax = plt.subplots(1, 1, figsize=(14, 8))
+	pad = 0.5
+	zscore_v_trace = zscore(lif_output.v, axis=0)
+	# zscore_v_trace = zscore_v_trace[:, ~np.any(np.isnan(zscore_v_trace), axis=0)]
+	zscore_v_trace = np.nan_to_num(zscore_v_trace, nan=0.0)
+	v_range = np.max(zscore_v_trace) - np.min(zscore_v_trace)
+	for i, neuron_idx in enumerate(neuron_indexes):
+		inv_idx = len(neuron_indexes) - i
+		# v_z_score = zscore(lif_output.v[:, neuron_idx])
+		# v_range = np.max(v_z_score) - np.min(v_z_score)
+		# v_range = 1.0
+		# ax.plot(lif_output.t_space_ms, zscore(lif_output.v[:, neuron_idx]) + i*(v_range + pad))
+		x, y = lif_output.t_space_ms, zscore_v_trace[:, neuron_idx] + (pad + v_range) * inv_idx
+		ax.plot(x, y, color=[0, 0, 0], zorder=i)
+		# plt.fill_between(lif_output.t_space_ms, v_z_score + (pad + v_range) * inv_idx, 0, color=[1, 1, 1], zorder=i)
+	ax.set_xlabel("Time [ms]")
+	ax.get_yaxis().set_visible(False)
+	os.makedirs("figures", exist_ok=True)
+	fig.savefig("figures/q2a_explo_v_traces.png", dpi=300)
+	if show:
+		plt.show()
 
 
 def question_2a_worker(lif, p_EE, I_E_value):
 	lif.set_p(p_EE=p_EE)
-	lif_output = lif.run(I_exc_func=IConst(I_E_value), T_ms=400, dt=1e-2, verbose=False)
+	lif_output = lif.run(I_exc_func=IConst(I_E_value), T_ms=400, dt=0.025, verbose=False)
 	return LIF.get_firing_rate(lif_output, reduce=True)
 
 
@@ -232,7 +259,7 @@ def question_2a():
 	np.random.seed(42)
 
 	p_EE_space = np.linspace(0.0, 1.0, num=10)
-	I_E_value_space = np.linspace(10.0, 30.0, num=10)
+	I_E_value_space = np.linspace(0.0, 30.0, num=10)
 
 	pp, II = np.meshgrid(p_EE_space, I_E_value_space)
 
@@ -259,7 +286,7 @@ def question_2a():
 
 
 if __name__ == '__main__':
-	# question_2_exploration()
+	# question_2_exploration(show=True)
 	question_2a()
 
 
