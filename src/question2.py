@@ -252,14 +252,14 @@ def question_2a_worker(lif, p_EE, I_E_value):
 	return LIF.get_firing_rate(lif_output, reduce=True)
 
 
-def question_2a(show=False):
+def question_2a(resolution: int = 10, show=False):
 	from pythonbasictools.multiprocessing import apply_func_multiprocess
 
 	sns.set_theme()
 	np.random.seed(42)
 
-	p_EE_space = np.linspace(0.0, 1.0, num=10)
-	I_E_value_space = np.linspace(0.0, 30.0, num=10)
+	p_EE_space = np.linspace(0.0, 1.0, num=resolution)
+	I_E_value_space = np.linspace(0.0, 30.0, num=resolution)
 
 	pp, II = np.meshgrid(p_EE_space, I_E_value_space)
 
