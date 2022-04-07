@@ -187,11 +187,11 @@ def question_2_exploration():
 	from src.ifunc import IConst
 
 	np.random.seed(42)
-	lif = LIF(n_exc=50, n_inh=50, p_EE=0.5, p_EI=0.1, p_IE=0.1, p_II=0.1, tau_syn=0.1)
+	lif = LIF(n_exc=50, n_inh=50, p_EE=0.8, p_EI=0.5, p_IE=0.5, p_II=0.5)
 	lif.show_c()
-	lif_output = lif.run(IConst(15.0), IConst(0.0), T_ms=100, dt=0.001)
+	lif_output = lif.run(IConst(25.0), IConst(0.0), T_ms=400, dt=0.01)
 
-	n_neurone = 4
+	n_neurone = 3
 	fr_mean = LIF.get_firing_rate(lif_output, reduce=True)
 	neuron_indexes = np.argsort(np.abs(fr_mean - LIF.get_firing_rate(lif_output, reduce=False)))[:n_neurone]
 	neuron_indexes = np.argsort(LIF.get_firing_rate(lif_output, reduce=False))[-n_neurone:]
