@@ -311,14 +311,14 @@ def question_2a(resolution: int = 25, show=False):
 	
 	fig, ax = plt.subplots(1, 1, figsize=(12, 8))
 	ax = sns.heatmap(
-		np.flip(np.asarray(firing_rates_list).reshape((*p_EE_space.shape, *I_E_value_space.shape)).T_ms, axis=0),
+		np.flip(np.asarray(firing_rates_list).reshape((*p_EE_space.shape, *I_E_value_space.shape)).T, axis=0),
 		xticklabels=['{:,.2f}'.format(x) for x in p_EE_space],
 		yticklabels=['{:,.2f}'.format(x) for x in I_E_value_space[::-1]],
 		cbar_kws={'label': 'Mean spiking rate [Hz]'},
 		ax=ax,
 	)
-	ax.set_xlabel("p_EE [-]")
-	ax.set_ylabel("I_E [?]")
+	ax.set_xlabel("$p_{EE}$ [-]")
+	ax.set_ylabel("$I_E$ [?]")
 	os.makedirs("figures", exist_ok=True)
 	plt.savefig("figures/q2a_heatmap.png", dpi=300)
 	if show:
@@ -390,14 +390,14 @@ def question_2c(resolution: int = 25, show=False):
 	)
 	fig, ax = plt.subplots(1, 1, figsize=(12, 8))
 	ax = sns.heatmap(
-		np.flip(np.asarray(firing_rates_list).reshape((*p_EI_space.shape, *p_IE_space.shape)).T_ms, axis=0),
+		np.flip(np.asarray(firing_rates_list).reshape((*p_EI_space.shape, *p_IE_space.shape)).T, axis=0),
 		xticklabels=['{:,.2f}'.format(x) for x in p_EI_space],
 		yticklabels=['{:,.2f}'.format(x) for x in p_IE_space[::-1]],
 		cbar_kws={'label': 'Mean spiking rate [Hz]'},
 		ax=ax,
 	)
-	ax.set_xlabel("p_EI [-]")
-	ax.set_ylabel("p_IE [-]")
+	ax.set_xlabel("$p_{EI}$ [-]")
+	ax.set_ylabel("$p_{IE}$ [-]")
 	os.makedirs("figures", exist_ok=True)
 	plt.savefig("figures/q2c_heatmap.png", dpi=300)
 	if show:
