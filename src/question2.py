@@ -127,7 +127,7 @@ class LIF:
 			I_exc_func: IFunc = IConst(0.0),
 			I_inh_func: IFunc = IConst(0.0),
 			T_ms: int = 100,
-			dt=1e-3,
+			dt=0.025,
 			verbose=True
 	):
 		time_steps = int(T_ms / dt)
@@ -248,7 +248,7 @@ def question_2_exploration(show=False):
 
 def question_2a_worker(lif, p_EE, I_E_value):
 	lif.set_p(p_EE=p_EE)
-	lif_output = lif.run(I_exc_func=IConst(I_E_value), T_ms=400, dt=0.025, verbose=False)
+	lif_output = lif.run(I_exc_func=IConst(I_E_value), T_ms=400, verbose=False)
 	return LIF.get_firing_rate(lif_output, reduce=True)
 
 
