@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from typing import NamedTuple, Callable, Union
 import matplotlib.pyplot as plt
@@ -224,7 +226,6 @@ def question_2a_worker(lif, p_EE, I_E_value):
 
 
 def question_2a():
-	from src.ifunc import IConst
 	from pythonbasictools.multiprocessing import apply_func_multiprocess
 
 	sns.set_theme()
@@ -238,14 +239,11 @@ def question_2a():
 	# store all the combination of p_EE and I_E
 	params_space = np.asarray((pp, II)).T.reshape(-1, 2)
 
-	lif = LIF(n_exc=50, n_inh=50, p_EE=0.5, p_EI=0.5, p_IE=0.5, p_II=0.5)
+	lif = LIF(n_exc=50, n_inh=50, p_EE=0.0, p_EI=0.0, p_IE=0.0, p_II=0.0)
 	firing_rates_list = apply_func_multiprocess(
 		func=question_2a_worker,
 		iterable_of_args=[(lif, p_EE, I_E_value) for p_EE, I_E_value in params_space]
 	)
-	# firing_rates_list = [
-	# 	question_2a_worker(lif, p_EE, I_E_value) for p_EE, I_E_value in params_space
-	# ]
 
 	ax = sns.heatmap(
 		np.asarray(firing_rates_list).reshape((*p_EE_space.shape, *I_E_value_space.shape))[::-1, :],
@@ -255,11 +253,13 @@ def question_2a():
 	)
 	ax.set_xlabel("p_EE")
 	ax.set_ylabel("I_E")
+	os.makedirs("figures", exist_ok=True)
+	plt.savefig("figures/q2a_heatmap.png", dpi=300)
 	plt.show()
 
 
 if __name__ == '__main__':
-	question_2_exploration()
+	# question_2_exploration()
 	question_2a()
 
 
