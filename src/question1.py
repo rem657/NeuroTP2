@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.integrate import solve_ivp
 import plotly.graph_objects as go
-from typing import Callable
+from typing import Callable, Any, List, Tuple, Union
 import seaborn as sns
 
 plot_layout = dict(
@@ -127,31 +127,33 @@ class WilsonCowanModel:
 		return solve_ivp(self.dXdt, self.time, init_cond, method='LSODA', args=[I], **kwargs)
 
 	def nullcline_A_E(self, A_e, I_e):
-		gamma_alpha = self.gamma/self.alpha
-		Ae_Se = (1/A_e) - 1 - (self.alpha / self.beta)
+		gamma_alpha = self.gamma / self.alpha
+		Ae_Se = (1 / A_e) - 1 - (self.alpha / self.beta)
 		a = gamma_alpha * Ae_Se
-		a[a==0] = None
+		a[a == 0] = None
 		ln = a - 1
 		Wei = self.weights[0, 1]
 		Wee = self.weights[0, 0]
-		return (1 / Wei) * (np.log(ln) + I_e + A_e*Wee)
+		return (1 / Wei) * (np.log(ln) + I_e + A_e * Wee)
 
 	def nullcline_A_I(self, A_i, I_i):
-		gamma_alpha = self.gamma/self.alpha
-		Ai_Si = (1/A_i) - 1 - (self.alpha / self.beta)
+		gamma_alpha = self.gamma / self.alpha
+		Ai_Si = (1 / A_i) - 1 - (self.alpha / self.beta)
 		a = gamma_alpha * Ai_Si
-		a[a==0] = None
+		a[a == 0] = None
 		ln = a - 1
 		Wie = self.weights[1, 0]
 		Wii = self.weights[1, 1]
-		return (1 / Wie) * (A_i*Wii - np.log(ln) - I_i)
-		# gammaSe = self.gamma * (1 - A_e - (self.alpha / self.beta) * A_e)
-		# alphaAe = self.alpha * A_e
-		# alphaAe[alphaAe == 0] = None
-		# a1 = gammaSe / alphaAe
-		# ln = a1 - 1  # - np.exp(-I_e) - np.exp(-A_e*self.weights[0, 0])
-		# a2 = I_e + A_e * self.weights[0, 0]
-		# return   # (self.gamma/self.alpha) * self.F(self.INP(1-S+R, I)) * S
+		return (1 / Wie) * (A_i * Wii - np.log(ln) - I_i)
+
+
+# gammaSe = self.gamma * (1 - A_e - (self.alpha / self.beta) * A_e)
+# alphaAe = self.alpha * A_e
+# alphaAe[alphaAe == 0] = None
+# a1 = gammaSe / alphaAe
+# ln = a1 - 1  # - np.exp(-I_e) - np.exp(-A_e*self.weights[0, 0])
+# a2 = I_e + A_e * self.weights[0, 0]
+# return   # (self.gamma/self.alpha) * self.F(self.INP(1-S+R, I)) * S
 
 
 def display_model(
@@ -656,78 +658,202 @@ def _phase_plan(model: WilsonCowanModel, time: np.ndarray, current_fun: Callable
 
 def phase_plan_layout(fig: go.Figure):
 	fig.update_xaxes(
-		title='A<sub>E</sub>'
+		title='A<sub>E</sub>',
+		range=[0, 1]
 	)
 	fig.update_yaxes(
-		title='A<sub>I</sub>'
+		title='A<sub>I</sub>',
+		range=[0, 1]
 	)
 	fig.update_layout(plot_layout)
 	return fig
 
 
-def phase_plan_var_init(weights: np.ndarray, current_func: Callable):
-	# weights = np.array(
-	# 	[
-	# 		[100, 1000],
-	# 		[100, 0]
-	# 	]
-	# )
+def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=False):
+	arr_init_conds = []
+	# Condition réaliste
 	A_0 = [0.0, 0.0]
-	S_0 = [1.0, 1.0]
+	S_0 = [1.0 - A_0[0], 1.0 - A_0[1]]
 	R_0 = [0.0, 0.0]
-	init_cond_0 = np.array([*A_0, *S_0, *R_0])
+	arr_init_conds.append(np.array([*A_0, *S_0, *R_0]))
 	A_1 = [1.0, 1.0]
-	S_1 = [0.0, 0.0]
+	S_1 = [1.0 - A_1[0], 1.0 - A_1[1]]
 	R_1 = [0.0, 0.0]
-	init_cond_1 = np.array([*A_1, *S_1, *R_1])
-	A_right = [0.7, 0.01]
-	S_right = [1 - A_right[0], 1 - A_right[1]]
-	R_right = [0.0, 0.0]
-	init_cond_right = np.array([*A_right, *S_right, *R_right])
-	A_right_2 = [0.7, 0.2]
-	S_right_2 = [1 - A_right_2[0], 1 - A_right_2[0]]
-	R_right_2 = [0.0, 0.0]
-	init_cond_right_2 = np.array([*A_right_2, *S_right_2, *R_right_2])
-	A_right_3 = [0.9, 0.3]
-	S_right_3 = [1 - A_right_3[0], 1 - A_right_3[0]]
+	arr_init_conds.append(np.array([*A_1, *S_1, *R_1]))
+	A_right_8 = [0.55, 0.81]
+	S_right_8 = [1 - A_right_8[0], 1 - A_right_8[1]]
+	R_right_8 = [0.0, 0.0]
+	arr_init_conds.append(np.array([*A_right_8, *S_right_8, *R_right_8]))
+	A_right_10 = [0.9, 0.0]
+	S_right_10 = [1 - A_right_10[0], 1 - A_right_10[1]]
+	R_right_10 = [0.0, 0.0]
+	arr_init_conds.append(np.array([*A_right_10, *S_right_10, *R_right_10]))
+	A_right_5 = [0.9, 0.2]
+	S_right_5 = [1 - A_right_5[0], 1 - A_right_5[1]]
+	R_right_5 = [0.0, 0.0]
+	arr_init_conds.append(np.array([*A_right_5, *S_right_5, *R_right_5]))
+	A_right_1 = [0.9, 0.4]
+	S_right_1 = [1 - A_right_1[0], 1 - A_right_1[1]]
+	R_right_1 = [0.0, 0.0]
+	arr_init_conds.append(np.array([*A_right_1, *S_right_1, *R_right_1]))
+	A_right_3 = [0.9, 0.6]
+	S_right_3 = [1 - A_right_3[0], 1 - A_right_3[1]]
 	R_right_3 = [0.0, 0.0]
-	init_cond_right_3 = np.array([*A_right_3, *S_right_3, *R_right_3])
-	A_right_3 = [0.9, 0.3]
-	S_right_3 = [1 - A_right_3[0], 1 - A_right_3[0]]
-	R_right_3 = [0.0, 0.0]
-	init_cond_right_3 = np.array([*A_right_3, *S_right_3, *R_right_3])
+	arr_init_conds.append(np.array([*A_right_3, *S_right_3, *R_right_3]))
+	# A_right_0 = [0.9, 0.8]
+	# S_right_0 = [1 - A_right_0[0], 1 - A_right_0[1]]
+	# R_right_0 = [0.0, 0.0]
+	# arr_init_conds.append(np.array([*A_right_0, *S_right_0, *R_right_0]))
 	A_center = [0.07, 0.01]
 	S_center = [1 - A_center[0], 1 - A_center[1]]
 	R_center = [0.0, 0.0]
-	init_cond_center = np.array([*A_center, *S_center, *R_center])
+	arr_init_conds.append(np.array([*A_center, *S_center, *R_center]))
 	A_asym = [0.1, 1]
 	S_asym = [1 - A_asym[0], 1 - A_asym[1]]
 	R_asym = [0.0, 0.0]
-	init_cond_asym = np.array([*A_asym, *S_asym, *R_asym])
-	A_asym_1 = [0.4, 0.8]
+	arr_init_conds.append(np.array([*A_asym, *S_asym, *R_asym]))
+	A_asym_1 = [0.3, 0.9]
 	S_asym_1 = [1 - A_asym_1[0], 1 - A_asym_1[1]]
 	R_asym_1 = [0.0, 0.0]
-	init_cond_asym_1 = np.array([*A_asym_1, *S_asym_1, *R_asym_1])
-
-	x, y = np.mgrid[0:1:5j, 0:1:5j]
-	x, y = x.flatten(), y.flatten()
-	arr_init_conds = [np.array([x[i], y[i], 1 - x[i], 1 - y[i], 0.0, 0.0]) for i in range(x.shape[0])] + []
-	# arr_init_conds = [init_cond_0, init_cond_1, init_cond_right, init_cond_center, init_cond_asym, init_cond_asym_1, init_cond_right_2, init_cond_right_3]
-	figure = go.Figure()
+	arr_init_conds.append(np.array([*A_asym_1, *S_asym_1, *R_asym_1]))
+	A_asym0250 = [0.25, 0.0]
+	S_asym0250 = [1 - A_asym0250[0], 1 - A_asym0250[1]]
+	R_asym0250 = [0.0, 0.0]
+	arr_init_conds.append(np.array([*A_asym0250, *S_asym0250, *R_asym0250]))
+	A_right_6 = [0.8, 0.3]
+	S_right_6 = [1 - A_right_6[0], 1 - A_right_6[1]]
+	R_right_6 = [0.0, 0.0]
+	arr_init_conds.append(np.array([*A_right_6, *S_right_6, *R_right_6]))
+	# Conditions sous population
+	# A_right = [0.7, 0.0]
+	# S_right = [1 - A_right[0], 1 - A_right[0]]
+	# R_right = [0.0, 0.0]
+	# arr_init_conds.append(np.array([*A_right, *S_right, *R_right]))
+	# A_right_2 = [0.7, 0.2]
+	# S_right_2 = [1 - A_right_2[0], 1 - A_right_2[1]]
+	# R_right_2 = [0.0, 0.0]
+	# arr_init_conds.append(np.array([*A_right_2, *S_right_2, *R_right_2]))
+	# A_right_4 = [0.7, 0.7]
+	# S_right_4 = [1 - A_right_4[0], 1 - A_right_4[1]]
+	# R_right_4 = [0.0, 0.0]
+	# arr_init_conds.append(np.array([*A_right_4, *S_right_4, *R_right_4]))
+	# A_right_6 = [0.7, 0.4]
+	# S_right_6 = [1 - A_right_6[0], 1 - A_right_6[1]]
+	# R_right_6 = [0.0, 0.0]
+	# arr_init_conds.append(np.array([*A_right_6, *S_right_6, *R_right_6]))
+	# A_right_7 = [0.7, 0.1]
+	# S_right_7 = [1 - A_right_7[0], 1 - A_right_7[1]]
+	# R_right_7 = [0.0, 0.0]
+	# arr_init_conds.append(np.array([*A_right_7, *S_right_7, *R_right_7]))
+	As = list(zip(*arr_init_conds))[0:2]
+	arr_theta = np.arctan((np.array(As[1])) / (np.array(As[0])))
+	arr_init_conds = np.array(arr_init_conds)
+	sorted_init_cond_index = np.argsort(arr_theta)
 	tmin = 0
 	tmax = 200
 	time = np.linspace(tmin, tmax, 8000)
 	model = WilsonCowanModel(tmin, tmax, weights=weights)
-	for condition in arr_init_conds:
-		time, A_E, A_I = _phase_plan(model, time, current_func, condition)
+	figure = _phase_plan_var(model, time, current_func, arr_init_conds[sorted_init_cond_index], animate)
+	figure = phase_plan_layout(figure)
+	figure.show()
+
+
+def _phase_plan_var(
+		model: WilsonCowanModel,
+		arr_time: np.array,
+		current_func: Callable,
+		init_conditions: list,
+		animate: bool = False,
+		colorscale: str = 'rocket',
+		figure=None,
+		**kwargs
+) -> go.Figure:
+	palette = sns.color_palette(colorscale, len(init_conditions))
+	if figure is None:
+		figure = go.Figure()
+	nb_frames = 1000
+	nb_time_per_frame = arr_time.shape[0] // nb_frames
+	list_trace_frame = []
+	for index, condition in enumerate(init_conditions):
+		time, A_E, A_I = _phase_plan(model, arr_time, current_func, condition)
+		dict_data = dict(
+			mode='lines',
+			name=f'({condition[0]}, {condition[1]})',
+			line=dict(color=f'rgb{tuple(map(lambda c: int(255 * c), palette[index]))}'),
+			**kwargs
+		)
 		figure.add_trace(
 			go.Scatter(
 				x=A_E,
 				y=A_I,
-				mode='lines',
-				name=f'({condition[0]}, {condition[1]})'
+				**dict_data
 			)
 		)
+		list_frame = []
+		for i in range(0, time.shape[0], nb_time_per_frame):
+			first_index = np.clip(i - 3 * nb_time_per_frame, 0, time.shape[0])
+			list_frame.append(
+				go.Scatter(
+					x=A_E[first_index:i + nb_time_per_frame],
+					y=A_I[first_index:i + nb_time_per_frame],
+					**dict_data
+				)
+			)
+		list_trace_frame.append(list_frame)
+	if animate:
+		list_frame_trace = list(zip(*list_trace_frame))
+		frames = [go.Frame(data=figure.data)] + [go.Frame(data=frame) for frame in list_frame_trace]
+		figure.update_layout(
+			updatemenus=[
+				dict(
+					type="buttons",
+					buttons=[
+						dict(
+							label="Play",
+							method="animate",
+							args=[
+								None,
+								{
+									"frame": {"duration": 60, "redraw": False},
+									"fromcurrent": True,
+									"mode": "immediate",
+									"transition": {"duration": 0, "easing": "linear"}
+								}
+							]
+						),
+						dict(
+							label="Pause",
+							method="animate",
+							args=[
+								[None],
+								{
+									"frame": {"duration": 0, "redraw": False},
+									"mode": "immediate",
+									"transition": {"duration": 0}
+								}
+							],
+						),
+						dict(
+							label="Reset",
+							method="animate",
+							args=[
+								None,
+								{
+									"frame": {"duration": 50000, "redraw": False},
+									"fromcurrent": False,
+									"mode": "immediate",
+									"transition": {"duration": 0}
+								}
+							],
+						),
+					]
+				),
+			],
+		)
+		if figure.frames is None:
+			figure.frames = frames
+		else:
+			figure.frames = list(figure.frames) + frames
 	arr_nulcline_ae = np.linspace(0, 0.2, 500)
 	arr_nulcline_ai = np.linspace(0, 0.1, 500)
 	nulcline_ae = model.nullcline_A_E(arr_nulcline_ae, current_func(0)[0])
@@ -739,7 +865,8 @@ def phase_plan_var_init(weights: np.ndarray, current_func: Callable):
 			mode='lines',
 			name='nullcline A<sub>E</sub>',
 			line_width=3,
-			line_color='orange'
+			line_color='orange',
+			**kwargs
 		)
 	)
 	figure.add_trace(
@@ -749,10 +876,75 @@ def phase_plan_var_init(weights: np.ndarray, current_func: Callable):
 			mode='lines',
 			name='nullcline A<sub>I</sub>',
 			line_width=3,
-			line_color='crimson'
+			line_color='crimson',
+			**kwargs
 		)
 	)
+	return figure
+
+
+def phase_plan_var_weight(
+		W_ee: Union[float, np.ndarray],
+		W_ei: Union[float, np.ndarray],
+		W_ie: Union[float, np.ndarray],
+		W_ii: Union[float, np.ndarray],
+		current_func: Callable,
+		animate: bool = False,
+		colorscale: str = 'rocket',
+		save: bool = False
+) -> None:
+	"""
+	Plot the phase plane of the model with the given weight matrix.
+
+	:param W_ee: weight of the excitatory-excitatory connections
+	:param W_ei: weight of the excitatory-inhibitory connections
+	:param W_ie: weight of the inhibitory-excitatory connections
+	:param W_ii: weight of the inhibitory-inhibitory connections
+	:param animate: if True, the figure will be animated
+	:param colorscale: color scale to use
+	"""
+	tmin = 0
+	tmax = 200
+	time = np.linspace(tmin, tmax, 8000)
+	# generate initial conditions
+	arr_init_conds = []
+	for init_A in [[0.25, 0.0], [1.0, 1.0], [0.8, 0.3], [0.3, 0.9]]:
+		A = init_A
+		S = [1 - A[0], 1 - A[1]]
+		R = [0.0, 0.0]
+		arr_init_conds.append(np.array([*A, *S, *R]))
+	As = list(zip(*arr_init_conds))[0:2]
+	arr_theta = np.arctan((np.array(As[1])) / (np.array(As[0])))
+	arr_init_conds = np.array(arr_init_conds)
+	sorted_init_cond_index = np.argsort(arr_theta)
+	arr_init_conds = arr_init_conds[sorted_init_cond_index]
+
+	weights = np.zeros((4,))
+	# find wich weight is an array
+	weigth_array = None
+	weigth_name = ''
+	for index, weight in enumerate([W_ee, W_ei, W_ie, W_ii]):
+		if isinstance(weight, np.ndarray):
+			if weigth_array is None:
+				weigth_array = weight
+				weigth_name = ['W_ee', 'W_ei', 'W_ie', 'W_ii'][index]
+			else:
+				raise ValueError('Only one array of weight can be given')
+		else:
+			weights[index] = weight
+	weights = weights.reshape((2, 2))
+	if weigth_array is None:
+		raise ValueError('No weight array found')
+	mask = weights == 0
+	figure = go.Figure()
+	for weight in weigth_array:
+		weights[mask] = weight
+		model = WilsonCowanModel(tmin, tmax, weights=weights)
+		figure = _phase_plan_var(model, time, current_func, arr_init_conds[sorted_init_cond_index], animate, colorscale, figure, legendgroup=f'{weight}', legendgrouptitle_text=f"W_II = {weight}",)
 	figure = phase_plan_layout(figure)
+	figure.update_layout(legend=dict(groupclick="toggleitem"))
+	if save:
+		figure.write_html(f"phase_plan_var_weight_{weigth_name}.html")
 	figure.show()
 
 
@@ -770,4 +962,5 @@ if __name__ == '__main__':
 	# display_model(0, 100, weights, I_func, alpha, gamma, beta).show()
 	# display_surfaces_WC(weights, -15, 15, 200, step_size_t=0.2)  # question 1a
 	# display_surface_wee_time(0.0, 0.0, 55, 2, 0.0, 100.0, 0.2, )
-	phase_plan_var_init(weights, I_func)
+	# phase_plan_var_init(weights, I_func, animate=True)
+	phase_plan_var_weight(weights[0, 0], weights[0, 1], weights[1, 0], np.arange(0, 100, 20), I_func, animate=False, save=False)
