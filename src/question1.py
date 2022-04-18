@@ -11,31 +11,31 @@ plot_layout = dict(
 	xaxis=dict(
 		showgrid=False,
 		zeroline=False,
-		title_font={'size': 20},
+		title_font={'size': 28},
 		tickfont=dict(
-			size=20
+			size=30
 		)
 	),
 	yaxis=dict(
 		showgrid=False,
 		zeroline=False,
-		title_font={'size': 20},
+		title_font={'size': 28},
 		tickfont=dict(
-			size=20
+			size=30
 		)
 	),
 	legend=dict(
 		font=dict(
-			size=19
+			size=25
 		)
 	)
 )
 axes_3D = dict(
 	showgrid=False,
 	zeroline=False,
-	title_font={'size': 20},
+	title_font={'size': 30},
 	tickfont=dict(
-		size=18,
+		size=20,
 	),
 	backgroundcolor='aliceblue',
 	showspikes=False,
@@ -51,7 +51,7 @@ plot_layout_3D = dict(
 	),
 	legend=dict(
 		font=dict(
-			size=19
+			size=22
 		)
 	)
 )
@@ -669,7 +669,7 @@ def phase_plan_layout(fig: go.Figure):
 	return fig
 
 
-def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=False):
+def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=False, colorscale: str='twilight_shifted'):
 	arr_init_conds = []
 	# Condition réaliste
 	A_0 = [0.0, 0.0]
@@ -680,7 +680,7 @@ def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=Fal
 	S_1 = [1.0 - A_1[0], 1.0 - A_1[1]]
 	R_1 = [0.0, 0.0]
 	arr_init_conds.append(np.array([*A_1, *S_1, *R_1]))
-	A_right_8 = [0.55, 0.81]
+	A_right_8 = [0.55, 0.8]
 	S_right_8 = [1 - A_right_8[0], 1 - A_right_8[1]]
 	R_right_8 = [0.0, 0.0]
 	arr_init_conds.append(np.array([*A_right_8, *S_right_8, *R_right_8]))
@@ -712,7 +712,7 @@ def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=Fal
 	S_asym = [1 - A_asym[0], 1 - A_asym[1]]
 	R_asym = [0.0, 0.0]
 	arr_init_conds.append(np.array([*A_asym, *S_asym, *R_asym]))
-	A_asym_1 = [0.3, 0.9]
+	A_asym_1 = [0.3, 1.0]
 	S_asym_1 = [1 - A_asym_1[0], 1 - A_asym_1[1]]
 	R_asym_1 = [0.0, 0.0]
 	arr_init_conds.append(np.array([*A_asym_1, *S_asym_1, *R_asym_1]))
@@ -753,7 +753,7 @@ def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=Fal
 	tmax = 200
 	time = np.linspace(tmin, tmax, 8000)
 	model = WilsonCowanModel(tmin, tmax, weights=weights)
-	figure = _phase_plan_var(model, time, current_func, arr_init_conds[sorted_init_cond_index], animate)
+	figure = _phase_plan_var(model, time, current_func, arr_init_conds[sorted_init_cond_index], animate, colorscale)
 	figure = phase_plan_layout(figure)
 	figure.show()
 
@@ -763,8 +763,9 @@ def _phase_plan_var(
 		arr_time: np.array,
 		current_func: Callable,
 		init_conditions: list,
-		animate: bool = False,
-		colorscale: str = 'rocket',
+		animate: bool=True,
+		colorscale: str = 'twilight_shifted',
+		nullcline_color: List[str] = ['orange', 'crimson'],
 		figure=None,
 		**kwargs
 ) -> go.Figure:
@@ -779,7 +780,10 @@ def _phase_plan_var(
 		dict_data = dict(
 			mode='lines',
 			name=f'({condition[0]}, {condition[1]})',
-			line=dict(color=f'rgb{tuple(map(lambda c: int(255 * c), palette[index]))}'),
+			line=dict(
+				width=3,
+				color=f'rgb{tuple(map(lambda c: int(255 * c), palette[index]))}'
+			),
 			**kwargs
 		)
 		figure.add_trace(
@@ -839,7 +843,7 @@ def _phase_plan_var(
 							args=[
 								None,
 								{
-									"frame": {"duration": 50000, "redraw": False},
+									"frame": {"duration": 500000, "redraw": False},
 									"fromcurrent": False,
 									"mode": "immediate",
 									"transition": {"duration": 0}
@@ -864,8 +868,8 @@ def _phase_plan_var(
 			y=nulcline_ae[~np.isnan(nulcline_ae)],
 			mode='lines',
 			name='nullcline A<sub>E</sub>',
-			line_width=3,
-			line_color='orange',
+			line_width=5,
+			line_color=nullcline_color[0],
 			**kwargs
 		)
 	)
@@ -875,8 +879,8 @@ def _phase_plan_var(
 			y=arr_nulcline_ai[~np.isnan(nulcline_ai)],
 			mode='lines',
 			name='nullcline A<sub>I</sub>',
-			line_width=3,
-			line_color='crimson',
+			line_width=5,
+			line_color=nullcline_color[1],
 			**kwargs
 		)
 	)
@@ -919,7 +923,7 @@ def phase_plan_var_weight(
 	sorted_init_cond_index = np.argsort(arr_theta)
 	arr_init_conds = arr_init_conds[sorted_init_cond_index]
 
-	weights = np.zeros((4,))
+	weights = np.ones((4,)) * -1
 	# find wich weight is an array
 	weigth_array = None
 	weigth_name = ''
@@ -935,16 +939,101 @@ def phase_plan_var_weight(
 	weights = weights.reshape((2, 2))
 	if weigth_array is None:
 		raise ValueError('No weight array found')
-	mask = weights == 0
+	mask = weights == -1
 	figure = go.Figure()
 	for weight in weigth_array:
 		weights[mask] = weight
 		model = WilsonCowanModel(tmin, tmax, weights=weights)
-		figure = _phase_plan_var(model, time, current_func, arr_init_conds[sorted_init_cond_index], animate, colorscale, figure, legendgroup=f'{weight}', legendgrouptitle_text=f"W_II = {weight}",)
+		figure = _phase_plan_var(model, time, current_func, arr_init_conds[sorted_init_cond_index], animate, colorscale,
+		                         figure, legendgroup=f'{weight}', legendgrouptitle_text=f"W_II = {weight}", )
 	figure = phase_plan_layout(figure)
 	figure.update_layout(legend=dict(groupclick="toggleitem"))
 	if save:
-		figure.write_html(f"phase_plan_var_weight_{weigth_name}.html")
+		figure.write_html(f"figure/phase_plan_var_weight_{weigth_name}.html")
+	figure.show()
+
+
+def phase_plan_var_I(
+		I_e: Union[float, np.ndarray],
+		I_i: Union[float, np.ndarray],
+		weights: np.ndarray,
+		animate: bool = False,
+		colorscale: str = 'rocket',
+		nullcline_colorscale: List[str] = ['Reds', 'Blues'],
+		save: bool = False
+) -> None:
+	"""
+	Plot the phase plane of the model with the given input currents.
+
+	:param nullcline_colorscale:
+	:param save:
+	:param I_e: current of the excitatory population
+	:param I_i: current of the inhibitory population
+	:param weights: weight matrix
+	:param animate: if True, the figure will be animated
+	:param colorscale: color scale to use
+	"""
+	tmin = 0
+	tmax = 200
+	time = np.linspace(tmin, tmax, 8000)
+	# generate initial conditions
+	arr_init_conds = []
+	for init_A in [[0.25, 0.0], [1.0, 1.0], [0.8, 0.3], [0.3, 0.9]]:
+		A = init_A
+		S = [1 - A[0], 1 - A[1]]
+		R = [0.0, 0.0]
+		arr_init_conds.append(np.array([*A, *S, *R]))
+	As = list(zip(*arr_init_conds))[0:2]
+	arr_theta = np.arctan((np.array(As[1])) / (np.array(As[0])))
+	arr_init_conds = np.array(arr_init_conds)
+	sorted_init_cond_index = np.argsort(arr_theta)
+	arr_init_conds = arr_init_conds[sorted_init_cond_index]
+
+	arr_current = None
+	current_name = ''
+	current_len_dict = {'I_e': 1, 'I_i': 1}
+	current_func_array = np.full((2,), np.nan)
+	# find which current is an array
+	for index, current in enumerate([I_e, I_i]):
+		if isinstance(current, np.ndarray):
+			if arr_current is not None:
+				raise ValueError('Only one array of current can be given')
+			else:
+				arr_current = current
+				current_name = ['I_e', 'I_i'][index]
+				current_len_dict[current_name] = len(current)
+		else:
+			current_func_array[index] = current
+	if arr_current is None:
+		raise ValueError('No current array found')
+	I_e_palette, I_i_palette = sns.color_palette(nullcline_colorscale[0], current_len_dict['I_e']), \
+	                           sns.color_palette(nullcline_colorscale[1], current_len_dict['I_i'])
+	figure = go.Figure()
+	# compute models
+	mask = np.isnan(current_func_array)
+	for index, current in enumerate(arr_current):
+		nullcline_colors = [
+			f"rgb{tuple(map(lambda c: int(255 * c), I_e_palette[index if current_len_dict['I_e'] != 1 else 0]))}",
+			f"rgb{tuple(map(lambda c: int(255 * c), I_i_palette[index if current_len_dict['I_i'] != 1 else 0]))}"]
+		current_func_array[mask] = current
+		current_func = lambda t: current_func_array
+		model = WilsonCowanModel(tmin, tmax, weights=weights)
+		figure = _phase_plan_var(
+			model,
+			time,
+			current_func,
+			arr_init_conds[sorted_init_cond_index],
+			animate,
+			colorscale,
+			nullcline_colors,
+			figure,
+			legendgroup=f'{current}',
+			legendgrouptitle_text=f"{current_name} = {current}",
+		)
+	figure = phase_plan_layout(figure)
+	figure.update_layout(legend=dict(groupclick="toggleitem"))
+	if save:
+		figure.write_html(f"figure/phase_plan_var_{current_name}.html")
 	figure.show()
 
 
@@ -962,5 +1051,6 @@ if __name__ == '__main__':
 	# display_model(0, 100, weights, I_func, alpha, gamma, beta).show()
 	# display_surfaces_WC(weights, -15, 15, 200, step_size_t=0.2)  # question 1a
 	# display_surface_wee_time(0.0, 0.0, 55, 2, 0.0, 100.0, 0.2, )
-	# phase_plan_var_init(weights, I_func, animate=True)
-	phase_plan_var_weight(weights[0, 0], weights[0, 1], weights[1, 0], np.arange(0, 100, 20), I_func, animate=False, save=False)
+	phase_plan_var_init(weights, I_func, animate=True)
+	# phase_plan_var_weight(weights[0, 0], weights[0, 1], weights[1, 0], np.arange(0, 100, 20), I_func, animate=False, save=False)
+	# phase_plan_var_I(5, np.arange(-10, 10, 4), weights, animate=False, save=False)

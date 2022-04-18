@@ -1,6 +1,6 @@
 import numpy as np
 
-from question1 import WilsonCowanModel, display_surface_wee_time, display_surfaces_WC, go, display_surface
+from question1 import WilsonCowanModel, display_surface_wee_time, display_surfaces_WC, go, display_surface, plot_layout_3D
 from dash import Dash, html, dcc, Input, Output, State, no_update
 import dash_bootstrap_components as dbc
 
@@ -247,6 +247,7 @@ def update_graph(n_clicks: int, axis_val, min_axis, max_axis, step_size, I_E, I_
 		elif axis_val == 'W_II':
 			W_ii = arr_variable
 		figure = display_surface(I_E, I_I, W_ee, W_ei, W_ie, W_ii, 0, 100, 0.2, 0.2, 1.0, 0.2)
+		figure.update_layout(plot_layout_3D)
 		figure.update_layout(
 			paper_bgcolor='rgba(0, 0, 0, 0)',
 			legend=dict(
@@ -265,6 +266,7 @@ def update_graph(n_clicks: int, axis_val, min_axis, max_axis, step_size, I_E, I_
 				),
 			)
 		)
+
 		return figure
 	else:
 		return no_update
@@ -286,7 +288,7 @@ def update_graph(n_clicks: int, axis_val, min_axis, max_axis, step_size, I_E, I_
 )
 def save_figure(n_clicks, figure, axis_val, ymin, ymax, I_E, I_I, W_EE, W_EI, W_IE, W_II):
 	if n_clicks is not None:
-		figure_title = f'surface_{axis_val}_{ymin=}_{ymax=}_'
+		figure_title = f'interface_out/surface_{axis_val}_{ymin=}_{ymax=}_'
 		if axis_val != 'I_E':
 			figure_title += f'{I_E=}_'
 		if axis_val != 'I_I':
