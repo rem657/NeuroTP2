@@ -669,7 +669,8 @@ def phase_plan_layout(fig: go.Figure):
 	return fig
 
 
-def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=False, colorscale: str='twilight_shifted'):
+def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=False,
+                        colorscale: str = 'twilight_shifted'):
 	arr_init_conds = []
 	# Condition réaliste
 	A_0 = [0.0, 0.0]
@@ -700,10 +701,6 @@ def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=Fal
 	S_right_3 = [1 - A_right_3[0], 1 - A_right_3[1]]
 	R_right_3 = [0.0, 0.0]
 	arr_init_conds.append(np.array([*A_right_3, *S_right_3, *R_right_3]))
-	# A_right_0 = [0.9, 0.8]
-	# S_right_0 = [1 - A_right_0[0], 1 - A_right_0[1]]
-	# R_right_0 = [0.0, 0.0]
-	# arr_init_conds.append(np.array([*A_right_0, *S_right_0, *R_right_0]))
 	A_center = [0.07, 0.01]
 	S_center = [1 - A_center[0], 1 - A_center[1]]
 	R_center = [0.0, 0.0]
@@ -724,27 +721,27 @@ def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=Fal
 	S_right_6 = [1 - A_right_6[0], 1 - A_right_6[1]]
 	R_right_6 = [0.0, 0.0]
 	arr_init_conds.append(np.array([*A_right_6, *S_right_6, *R_right_6]))
+	A_right_6 = [0.8, 0.6]
+	S_right_6 = [1 - A_right_6[0], 1 - A_right_6[1]]
+	R_right_6 = [0.0, 0.0]
+	arr_init_conds.append(np.array([*A_right_6, *S_right_6, *R_right_6]))
 	# Conditions sous population
-	# A_right = [0.7, 0.0]
-	# S_right = [1 - A_right[0], 1 - A_right[0]]
+	# A_right = [0.8, 0.6]
+	# S_right = [1 - A_right[0], 0.2]
 	# R_right = [0.0, 0.0]
 	# arr_init_conds.append(np.array([*A_right, *S_right, *R_right]))
-	# A_right_2 = [0.7, 0.2]
-	# S_right_2 = [1 - A_right_2[0], 1 - A_right_2[1]]
-	# R_right_2 = [0.0, 0.0]
-	# arr_init_conds.append(np.array([*A_right_2, *S_right_2, *R_right_2]))
-	# A_right_4 = [0.7, 0.7]
-	# S_right_4 = [1 - A_right_4[0], 1 - A_right_4[1]]
-	# R_right_4 = [0.0, 0.0]
-	# arr_init_conds.append(np.array([*A_right_4, *S_right_4, *R_right_4]))
-	# A_right_6 = [0.7, 0.4]
-	# S_right_6 = [1 - A_right_6[0], 1 - A_right_6[1]]
-	# R_right_6 = [0.0, 0.0]
-	# arr_init_conds.append(np.array([*A_right_6, *S_right_6, *R_right_6]))
-	# A_right_7 = [0.7, 0.1]
-	# S_right_7 = [1 - A_right_7[0], 1 - A_right_7[1]]
-	# R_right_7 = [0.0, 0.0]
-	# arr_init_conds.append(np.array([*A_right_7, *S_right_7, *R_right_7]))
+	# A_right = [0.8, 0.6]
+	# S_right = [0.0, 1 - A_right[1]]
+	# R_right = [0.0, 0.0]
+	# arr_init_conds.append(np.array([*A_right, *S_right, *R_right]))
+	# A_right = [0.8, 0.6]
+	# S_right = [1.0, 1 - A_right[1]]
+	# R_right = [0.0, 0.0]
+	# arr_init_conds.append(np.array([*A_right, *S_right, *R_right]))
+	# A_right = [0.8, 0.6]
+	# S_right = [1 - A_right[0], 1.0]
+	# R_right = [0.0, 0.0]
+	# arr_init_conds.append(np.array([*A_right, *S_right, *R_right]))
 	As = list(zip(*arr_init_conds))[0:2]
 	arr_theta = np.arctan((np.array(As[1])) / (np.array(As[0])))
 	arr_init_conds = np.array(arr_init_conds)
@@ -763,7 +760,7 @@ def _phase_plan_var(
 		arr_time: np.array,
 		current_func: Callable,
 		init_conditions: list,
-		animate: bool=True,
+		animate: bool = True,
 		colorscale: str = 'twilight_shifted',
 		nullcline_color: List[str] = ['orange', 'crimson'],
 		figure=None,
@@ -777,9 +774,16 @@ def _phase_plan_var(
 	list_trace_frame = []
 	for index, condition in enumerate(init_conditions):
 		time, A_E, A_I = _phase_plan(model, arr_time, current_func, condition)
+		sum_condition_E = np.sum(condition[[0, 2, 4]])
+		sum_condition_I = np.sum(condition[[1, 3, 5]])
+		is_E_less_two = sum_condition_E < 1
+		is_E_more_two = sum_condition_E > 1
+		is_I_less_two = sum_condition_I < 1
+		is_I_more_two = sum_condition_I > 1
+		name_ext = '_I_underpop' if is_I_less_two else '_I_overpop' if is_I_more_two else '_E_underpop' if is_E_less_two else '_E_overpop' if is_E_more_two else ''
 		dict_data = dict(
 			mode='lines',
-			name=f'({condition[0]}, {condition[1]})',
+			name=f'({condition[0]}, {condition[1]}){name_ext}',
 			line=dict(
 				width=3,
 				color=f'rgb{tuple(map(lambda c: int(255 * c), palette[index]))}'
@@ -858,8 +862,8 @@ def _phase_plan_var(
 			figure.frames = frames
 		else:
 			figure.frames = list(figure.frames) + frames
-	arr_nulcline_ae = np.linspace(0, 0.2, 500)
-	arr_nulcline_ai = np.linspace(0, 0.1, 500)
+	arr_nulcline_ae = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.09, 10000)], np.linspace(0.09, 0.1, 50000, endpoint=True))
+	arr_nulcline_ai = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.09, 10000)], np.linspace(0.09, 0.1, 50000, endpoint=True))
 	nulcline_ae = model.nullcline_A_E(arr_nulcline_ae, current_func(0)[0])
 	nulcline_ai = model.nullcline_A_I(arr_nulcline_ai, current_func(0)[1])
 	figure.add_trace(
@@ -993,6 +997,7 @@ def phase_plan_var_I(
 	current_name = ''
 	current_len_dict = {'I_e': 1, 'I_i': 1}
 	current_func_array = np.full((2,), np.nan)
+	colorscale_current_var: list = None
 	# find which current is an array
 	for index, current in enumerate([I_e, I_i]):
 		if isinstance(current, np.ndarray):
@@ -1002,6 +1007,8 @@ def phase_plan_var_I(
 				arr_current = current
 				current_name = ['I_e', 'I_i'][index]
 				current_len_dict[current_name] = len(current)
+				colorscale_current_var = list(map(lambda color: f"rgb{tuple(map(lambda c: int(255 * c), color))}",
+				                                  sns.color_palette(nullcline_colorscale[index], len(current))))
 		else:
 			current_func_array[index] = current
 	if arr_current is None:
@@ -1011,6 +1018,8 @@ def phase_plan_var_I(
 	figure = go.Figure()
 	# compute models
 	mask = np.isnan(current_func_array)
+	colorscale_current = [[i / (len(colorscale_current_var) - 1), colorscale_current_var[i]] for i in
+	                      range(len(colorscale_current_var))]
 	for index, current in enumerate(arr_current):
 		nullcline_colors = [
 			f"rgb{tuple(map(lambda c: int(255 * c), I_e_palette[index if current_len_dict['I_e'] != 1 else 0]))}",
@@ -1030,8 +1039,40 @@ def phase_plan_var_I(
 			legendgroup=f'{current}',
 			legendgrouptitle_text=f"{current_name} = {current}",
 		)
+	figure.add_trace(
+		go.Scatter(
+			x=[0],
+			y=[0],
+			mode='markers',
+			opacity=0.0,
+			marker=dict(
+				colorscale=colorscale_current,
+				showscale=True,
+				cmin=arr_current[0],
+				cmax=arr_current[-1],
+				colorbar=dict(
+					thickness=55,
+					ticks="outside",
+					tickvals=[i for i in arr_current],
+					title=dict(
+						text=f"{current_name}",
+						font_size=32,
+					),
+					tickfont_size=28,
+				)
+			),
+			showlegend=False,
+		)
+	)
 	figure = phase_plan_layout(figure)
-	figure.update_layout(legend=dict(groupclick="toggleitem"))
+	figure.update_layout(legend=dict(
+		groupclick="toggleitem",
+		yanchor="top",
+		y=0.99,
+		xanchor="left",
+		x=1.13
+	)
+	)
 	if save:
 		figure.write_html(f"figure/phase_plan_var_{current_name}.html")
 	figure.show()
@@ -1051,6 +1092,6 @@ if __name__ == '__main__':
 	# display_model(0, 100, weights, I_func, alpha, gamma, beta).show()
 	# display_surfaces_WC(weights, -15, 15, 200, step_size_t=0.2)  # question 1a
 	# display_surface_wee_time(0.0, 0.0, 55, 2, 0.0, 100.0, 0.2, )
-	phase_plan_var_init(weights, I_func, animate=True)
+	# phase_plan_var_init(weights, I_func, animate=True)
 	# phase_plan_var_weight(weights[0, 0], weights[0, 1], weights[1, 0], np.arange(0, 100, 20), I_func, animate=False, save=False)
-	# phase_plan_var_I(5, np.arange(-10, 10, 4), weights, animate=False, save=False)
+	phase_plan_var_I(5, np.linspace(-14, -2, 4), weights, animate=False, save=False)
