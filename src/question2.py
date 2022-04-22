@@ -449,6 +449,15 @@ def question_2c_raster_worker(lif, p_EI, p_IE):
 	return lif_output
 
 
+def raster_plot(output, ax):
+	line_length = 1.0
+	pad = 0.5
+	for n_idx, spikes in enumerate(output.spikes.T):
+		spikes_idx = output.t_space_ms[np.isclose(spikes, 1.0)]
+		ymin = (output.spikes.shape[-1] - n_idx) * (pad + line_length)
+		ax.vlines(spikes_idx, ymin=ymin, ymax=ymin + line_length, colors=[0, 0, 0])
+
+
 def question_2c_raster(resolution: int = 25, show=False):
 	p_EI_values = np.array([0.0, 0.21, 0.96, 0.62])
 	p_IE_values = np.array([0.17, 0.62, 0.96, 0.21])
@@ -460,8 +469,8 @@ def question_2c_raster(resolution: int = 25, show=False):
 		iterable_of_args=[(lif, p_EI, p_IE) for p_EI, p_IE in zip(p_EI_values, p_IE_values)]
 	)
 
-	line_length = 1.0
-	pad = 0.5
+	# line_length = 1.0
+	# pad = 0.5
 
 	nrows = int(np.sqrt(p_EI_values.size))
 	nrows = p_EI_values.size
@@ -469,10 +478,11 @@ def question_2c_raster(resolution: int = 25, show=False):
 	fig, axes = plt.subplots(nrows, ncols, figsize=(14, 10), sharex='all')
 	axes = np.ravel([axes])
 	for i, (ax, out) in enumerate(zip(axes, outputs)):
-		for n_idx, spikes in enumerate(out.spikes.T):
-			spikes_idx = out.t_space_ms[np.isclose(spikes, 1.0)]
-			ymin = (out.spikes.shape[-1] - n_idx) * (pad + line_length)
-			ax.vlines(spikes_idx, ymin=ymin, ymax=ymin + line_length, colors=[0, 0, 0])
+		# for n_idx, spikes in enumerate(out.spikes.T):
+		raster_plot(out, ax)
+			# spikes_idx = out.t_space_ms[np.isclose(spikes, 1.0)]
+			# ymin = (out.spikes.shape[-1] - n_idx) * (pad + line_length)
+			# ax.vlines(spikes_idx, ymin=ymin, ymax=ymin + line_length, colors=[0, 0, 0])
 
 		ax.set_xlabel("Time [ms]")
 		ax.get_yaxis().set_visible(False)

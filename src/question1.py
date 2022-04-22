@@ -862,8 +862,8 @@ def _phase_plan_var(
 			figure.frames = frames
 		else:
 			figure.frames = list(figure.frames) + frames
-	arr_nulcline_ae = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.09, 10000)], np.linspace(0.09, 0.1, 50000, endpoint=True))
-	arr_nulcline_ai = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.09, 10000)], np.linspace(0.09, 0.1, 50000, endpoint=True))
+	arr_nulcline_ae = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.0907, 10000, endpoint=True)], np.linspace(0.0907, 0.090909091, 200000))
+	arr_nulcline_ai = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.09, 10000, endpoint=True)], np.linspace(0.09, 0.1, 50000, endpoint=True))
 	nulcline_ae = model.nullcline_A_E(arr_nulcline_ae, current_func(0)[0])
 	nulcline_ai = model.nullcline_A_I(arr_nulcline_ai, current_func(0)[1])
 	figure.add_trace(
@@ -899,11 +899,15 @@ def phase_plan_var_weight(
 		current_func: Callable,
 		animate: bool = False,
 		colorscale: str = 'rocket',
+		nullcline_colorscale: List[str] = ['Reds', 'Blues'],
 		save: bool = False
 ) -> None:
 	"""
 	Plot the phase plane of the model with the given weight matrix.
 
+	:param current_func:
+	:param save:
+	:param nullcline_colorscale:
 	:param W_ee: weight of the excitatory-excitatory connections
 	:param W_ei: weight of the excitatory-inhibitory connections
 	:param W_ie: weight of the inhibitory-excitatory connections
@@ -926,16 +930,21 @@ def phase_plan_var_weight(
 	arr_init_conds = np.array(arr_init_conds)
 	sorted_init_cond_index = np.argsort(arr_theta)
 	arr_init_conds = arr_init_conds[sorted_init_cond_index]
-
+	nullcline_len_dict = {'A_E': 1, 'A_I': 1}
 	weights = np.ones((4,)) * -1
 	# find wich weight is an array
 	weigth_array = None
 	weigth_name = ''
+	colorscale_weight_var = None
 	for index, weight in enumerate([W_ee, W_ei, W_ie, W_ii]):
 		if isinstance(weight, np.ndarray):
 			if weigth_array is None:
 				weigth_array = weight
 				weigth_name = ['W_ee', 'W_ei', 'W_ie', 'W_ii'][index]
+				nullcline_name = ['A_E', 'A_I'][index // 2]
+				nullcline_len_dict[nullcline_name] = len(weight)
+				colorscale_weight_var = list(map(lambda color: f"rgb{tuple(map(lambda c: int(255 * c), color))}",
+				                                  sns.color_palette(nullcline_colorscale[index//2], len(weigth_array))))
 			else:
 				raise ValueError('Only one array of weight can be given')
 		else:
@@ -943,15 +952,66 @@ def phase_plan_var_weight(
 	weights = weights.reshape((2, 2))
 	if weigth_array is None:
 		raise ValueError('No weight array found')
+
+	A_e_palette, A_i_palette = sns.color_palette(nullcline_colorscale[0], nullcline_len_dict['A_E']), \
+	                           sns.color_palette(nullcline_colorscale[1], nullcline_len_dict['A_I'])
+	# compute models
+	colorscale_current = [[i / (len(colorscale_weight_var) - 1), colorscale_weight_var[i]] for i in
+	                      range(len(colorscale_weight_var))]
 	mask = weights == -1
 	figure = go.Figure()
-	for weight in weigth_array:
+	for index, weight in enumerate(weigth_array):
 		weights[mask] = weight
+		nullcline_colors = [
+			f"rgb{tuple(map(lambda c: int(255 * c), A_e_palette[index if nullcline_len_dict['A_E'] != 1 else 0]))}",
+			f"rgb{tuple(map(lambda c: int(255 * c), A_i_palette[index if nullcline_len_dict['A_I'] != 1 else 0]))}"]
 		model = WilsonCowanModel(tmin, tmax, weights=weights)
-		figure = _phase_plan_var(model, time, current_func, arr_init_conds[sorted_init_cond_index], animate, colorscale,
-		                         figure, legendgroup=f'{weight}', legendgrouptitle_text=f"W_II = {weight}", )
+		figure = _phase_plan_var(
+			model,
+			time,
+			current_func,
+			arr_init_conds[sorted_init_cond_index],
+			animate,
+			colorscale,
+			nullcline_colors,
+			figure,
+			legendgroup=f'{weight}',
+			legendgrouptitle_text=f"{weigth_name} = {weight}",
+		)
+	figure.add_trace(
+		go.Scatter(
+			x=[0],
+			y=[0],
+			mode='markers',
+			opacity=0.0,
+			marker=dict(
+				colorscale=colorscale_current,
+				showscale=True,
+				cmin=weigth_array[0],
+				cmax=weigth_array[-1],
+				colorbar=dict(
+					thickness=55,
+					ticks="outside",
+					tickvals=[i for i in weigth_array],
+					title=dict(
+						text=f"{weigth_name}",
+						font_size=32,
+					),
+					tickfont_size=28,
+				)
+			),
+			showlegend=False,
+		)
+	)
 	figure = phase_plan_layout(figure)
-	figure.update_layout(legend=dict(groupclick="toggleitem"))
+	figure.update_layout(legend=dict(
+		groupclick="toggleitem",
+		yanchor="top",
+		y=0.99,
+		xanchor="left",
+		x=1.13
+	)
+	)
 	if save:
 		figure.write_html(f"figure/phase_plan_var_weight_{weigth_name}.html")
 	figure.show()
@@ -1093,5 +1153,5 @@ if __name__ == '__main__':
 	# display_surfaces_WC(weights, -15, 15, 200, step_size_t=0.2)  # question 1a
 	# display_surface_wee_time(0.0, 0.0, 55, 2, 0.0, 100.0, 0.2, )
 	# phase_plan_var_init(weights, I_func, animate=True)
-	# phase_plan_var_weight(weights[0, 0], weights[0, 1], weights[1, 0], np.arange(0, 100, 20), I_func, animate=False, save=False)
-	phase_plan_var_I(5, np.linspace(-14, -2, 4), weights, animate=False, save=False)
+	phase_plan_var_weight(weights[0, 0], weights[0, 1], np.geomspace(50, 1000, 5), weights[1, 1], I_func, animate=False, save=False)
+	# phase_plan_var_I(np.linspace(-10, 80, 5), -10, weights, animate=False, save=False)
