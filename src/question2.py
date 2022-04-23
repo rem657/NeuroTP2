@@ -456,6 +456,7 @@ def raster_plot(output, ax):
 		spikes_idx = output.t_space_ms[np.isclose(spikes, 1.0)]
 		ymin = (output.spikes.shape[-1] - n_idx) * (pad + line_length)
 		ax.vlines(spikes_idx, ymin=ymin, ymax=ymin + line_length, colors=[0, 0, 0])
+	ax.get_yaxis().set_visible(False)
 
 
 def question_2c_raster(resolution: int = 25, show=False):

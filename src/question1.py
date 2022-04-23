@@ -648,6 +648,44 @@ def display_surface(
 	return figure
 
 
+def question1a():
+	weights = np.array(
+		[
+			[0, 0],
+			[0, 0]
+		]
+	)
+	I_I = 0
+	I_E = np.linspace(-15, 15, num=100)
+	gamma = 0.2
+	alpha = 1
+	beta = 0.2
+	figure = display_surface(I_E, I_I, weights[0, 0], weights[0, 1], weights[1, 0], weights[1, 1], 0, 100, 0.5, gamma,
+	                         alpha, beta)
+	figure.write_html(f"figures/figure_1a.html")
+
+
+def question1b():
+	weights = np.array(
+		[
+			[0, 0],
+			[0, 0]
+		]
+	)
+	I_I = 0
+	I_E = 0
+	W_EE = np.linspace(0, 50, 25)
+	gamma = 0.2
+	alpha = 1
+	beta = 0.2
+	figure = display_surface(I_E, I_I, W_EE, weights[0, 1], weights[1, 0], weights[1, 1], 0, 100, 0.5, gamma,
+	                         alpha, beta)
+	figure.show()
+
+
+# figure.write_html(f"figures/figure_1b.html")
+
+
 def _phase_plan(model: WilsonCowanModel, time: np.ndarray, current_fun: Callable, initial_cond: np.ndarray):
 	solution = model.compute_model(initial_cond, current_fun, t_eval=time)
 	y = solution.y
@@ -670,7 +708,7 @@ def phase_plan_layout(fig: go.Figure):
 
 
 def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=False,
-                        colorscale: str = 'twilight_shifted'):
+                        colorscale: str = 'twilight_shifted', save: bool = False):
 	arr_init_conds = []
 	# Condition réaliste
 	A_0 = [0.0, 0.0]
@@ -752,7 +790,10 @@ def phase_plan_var_init(weights: np.ndarray, current_func: Callable, animate=Fal
 	model = WilsonCowanModel(tmin, tmax, weights=weights)
 	figure = _phase_plan_var(model, time, current_func, arr_init_conds[sorted_init_cond_index], animate, colorscale)
 	figure = phase_plan_layout(figure)
-	figure.show()
+	if save:
+		figure.write_html('figures/phase_plan_init_cond.html')
+	else:
+		figure.show()
 
 
 def _phase_plan_var(
@@ -862,8 +903,10 @@ def _phase_plan_var(
 			figure.frames = frames
 		else:
 			figure.frames = list(figure.frames) + frames
-	arr_nulcline_ae = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.0907, 10000, endpoint=True)], np.linspace(0.0907, 0.090909091, 200000))
-	arr_nulcline_ai = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.09, 10000, endpoint=True)], np.linspace(0.09, 0.1, 50000, endpoint=True))
+	arr_nulcline_ae = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.0907, 10000, endpoint=True)],
+	                            np.linspace(0.0907, 0.090909091, 200000))
+	arr_nulcline_ai = np.append([np.linspace(1e-26, 0.01, 10000), np.linspace(0.01, 0.09, 10000, endpoint=True)],
+	                            np.linspace(0.09, 0.1, 50000, endpoint=True))
 	nulcline_ae = model.nullcline_A_E(arr_nulcline_ae, current_func(0)[0])
 	nulcline_ai = model.nullcline_A_I(arr_nulcline_ai, current_func(0)[1])
 	figure.add_trace(
@@ -944,7 +987,8 @@ def phase_plan_var_weight(
 				nullcline_name = ['A_E', 'A_I'][index // 2]
 				nullcline_len_dict[nullcline_name] = len(weight)
 				colorscale_weight_var = list(map(lambda color: f"rgb{tuple(map(lambda c: int(255 * c), color))}",
-				                                  sns.color_palette(nullcline_colorscale[index//2], len(weigth_array))))
+				                                 sns.color_palette(nullcline_colorscale[index // 2],
+				                                                   len(weigth_array))))
 			else:
 				raise ValueError('Only one array of weight can be given')
 		else:
@@ -1013,7 +1057,7 @@ def phase_plan_var_weight(
 	)
 	)
 	if save:
-		figure.write_html(f"figure/phase_plan_var_weight_{weigth_name}.html")
+		figure.write_html(f"figures/phase_plan_var_weight_{weigth_name}.html")
 	figure.show()
 
 
@@ -1135,7 +1179,34 @@ def phase_plan_var_I(
 	)
 	if save:
 		figure.write_html(f"figure/phase_plan_var_{current_name}.html")
-	figure.show()
+	else:
+		figure.show()
+
+
+def question1c():
+	weights = np.array(
+		[
+			[100, 1000],
+			[100, 0]
+		]
+	)
+	I_I = -10
+	I_E = 5
+	I_func = lambda t: np.array([I_E, I_I])
+	#variation of init_cond
+	phase_plan_var_init(weights, I_func, animate=True, save=True)
+	#variation of current I
+	phase_plan_var_I(I_E, np.linspace(-14, -2, 4), weights, animate=False, save=True)
+	# variation of current E
+	phase_plan_var_I(np.linspace(-10, 80, 5), I_I, weights, animate=False, save=True)
+	# variation of W_ee
+	phase_plan_var_weight(np.linspace(0, 800, 5), weights[0, 1], weights[1, 0], weights[1, 1], I_func, animate=False, save=True)
+	# variation of W_ii
+	phase_plan_var_weight(weights[0, 0], weights[0, 1], weights[1, 0], np.linspace(0, 225, 4), I_func, animate=False, save=True)
+	# variation of W_ei
+	phase_plan_var_weight(weights[0, 0], np.geomspace(100, 1000, 4), weights[1, 0], weights[1, 1], I_func, animate=False, save=True)
+	# variation of W_ie
+	phase_plan_var_weight(weights[0, 0], weights[0, 1], np.geomspace(100, 1000, 4), weights[1, 1], I_func, animate=False, save=True)
 
 
 if __name__ == '__main__':
@@ -1153,5 +1224,5 @@ if __name__ == '__main__':
 	# display_surfaces_WC(weights, -15, 15, 200, step_size_t=0.2)  # question 1a
 	# display_surface_wee_time(0.0, 0.0, 55, 2, 0.0, 100.0, 0.2, )
 	# phase_plan_var_init(weights, I_func, animate=True)
-	phase_plan_var_weight(weights[0, 0], weights[0, 1], np.geomspace(50, 1000, 5), weights[1, 1], I_func, animate=False, save=False)
+	# phase_plan_var_weight(weights[0, 0], weights[0, 1], np.geomspace(50, 1000, 5), weights[1, 1], I_func, animate=False, save=False)
 	# phase_plan_var_I(np.linspace(-10, 80, 5), -10, weights, animate=False, save=False)
