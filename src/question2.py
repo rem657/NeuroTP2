@@ -499,8 +499,8 @@ def question_2c_raster(resolution: int = 25, show=False):
 
 
 if __name__ == '__main__':
-	# question_2_exploration(show=False)
-	# question_2a(resolution=25, show=False)
-	# question_2b(show=False)
-	# question_2c(resolution=25, show=True)
+	question_2_exploration(show=False)
+	question_2a(resolution=25, show=False)
+	question_2b(show=False)
+	question_2c(resolution=25, show=True)
 	question_2c_raster(resolution=25, show=False)
